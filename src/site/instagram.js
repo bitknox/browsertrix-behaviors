@@ -7,6 +7,7 @@ import {
 	RestoreState,
 	waitUnit,
 	waitUntil,
+	xpathNodes,
 } from "../lib/utils";
 
 // ===========================================================================
@@ -32,6 +33,9 @@ export class InstagramPostsBehavior extends Behavior {
 		this.firstPostInRow = "div[1]/a";
 		//this.postCloseButton = "//button[.//*[@aria-label=\"Close\"]]";
 		//this.postCloseButton = "/html/body/div[last()]/div[3]/button[.//*[@aria-label]]";
+
+		this.stories = "//div[@role='menu']//li[@tabindex='-1']"
+
 		this.postCloseButton =
 			"/html/body/div[last()]/div[1]/button[.//*[@aria-label]]";
 
@@ -250,6 +254,20 @@ export class InstagramPostsBehavior extends Behavior {
 		return commentsLoaded;
 	}
 
+	async *iterStories(){
+		let storyNode = xpathNode(this.stories)
+		console.log(storyNode)
+		if(!storyNode)
+			return
+
+		while (storyNode){
+			yield storyNode
+			storyNode = storyNode.nextElementSibling
+		}
+		
+
+	}
+
 	async *iterPosts(next) {
 		let count = 0;
 
@@ -280,6 +298,14 @@ export class InstagramPostsBehavior extends Behavior {
 	async *[Symbol.asyncIterator]() {
 		const origLoc = window.location.href;
 
+		/*storyNodes.next().value.click()
+		yield this.getState("Loaded Stories", "stories");*/
+		
+		for await(const story of this.iterStories()){
+			console.log(story)
+		}
+
+		/*
 		yield* this.viewStandalonePost(origLoc);
 
 		for await (const row of this.iterRow()) {
@@ -300,5 +326,6 @@ export class InstagramPostsBehavior extends Behavior {
 
 			await sleep(waitUnit * 5);
 		}
+		*/
 	}
 }
