@@ -1,280 +1,304 @@
 import { Behavior } from "../lib/behavior";
 //import { behavior_log, installBehaviors } from "../lib/utils";
-import { sleep, xpathNode, xpathString, RestoreState, waitUnit, waitUntil } from "../lib/utils";
-
+import {
+	sleep,
+	xpathNode,
+	xpathString,
+	RestoreState,
+	waitUnit,
+	waitUntil,
+} from "../lib/utils";
 
 // ===========================================================================
-export class InstagramPostsBehavior extends Behavior
-{
-  static isMatch() {
-    return window.location.href.match(/https:\/\/(www\.)?instagram\.com\/\w[\w.-]+/);
-  }
+export class InstagramPostsBehavior extends Behavior {
+	static isMatch() {
+		return window.location.href.match(
+			/https:\/\/(www\.)?instagram\.com\/\w[\w.-]+/
+		);
+	}
 
-  static get name() {
-    return "Instagram";
-  }
+	static get name() {
+		return "Instagram";
+	}
 
-  constructor() {
-    super();
-    this.state = {};
-        
-    this.rootPath = "//article/div/div";
-    this.childMatchSelect = "string(.//a[starts-with(@href, '/')]/@href)";
-    this.childMatch = "child::div[.//a[@href='$1']]";
+	constructor() {
+		super();
+		this.state = {};
 
-    this.firstPostInRow = "div[1]/a";
-    //this.postCloseButton = "//button[.//*[@aria-label=\"Close\"]]";
-    //this.postCloseButton = "/html/body/div[last()]/div[3]/button[.//*[@aria-label]]";
-    this.postCloseButton = "/html/body/div[last()]/div[1]/button[.//*[@aria-label]]";
+		this.rootPath = "//article/div/div";
+		this.childMatchSelect = "string(.//a[starts-with(@href, '/')]/@href)";
+		this.childMatch = "child::div[.//a[@href='$1']]";
 
-    //this.nextPost = "//div[@role='dialog']//a[text()='Next']";
-    //this.nextPost = "//div[@role='dialog']//a[contains(@class, 'coreSpriteRightPaginationArrow')]";
+		this.firstPostInRow = "div[1]/a";
+		//this.postCloseButton = "//button[.//*[@aria-label=\"Close\"]]";
+		//this.postCloseButton = "/html/body/div[last()]/div[3]/button[.//*[@aria-label]]";
+		this.postCloseButton =
+			"/html/body/div[last()]/div[1]/button[.//*[@aria-label]]";
+
+		//this.nextPost = "//div[@role='dialog']//a[text()='Next']";
+		//this.nextPost = "//div[@role='dialog']//a[contains(@class, 'coreSpriteRightPaginationArrow')]";
 		this.nextPost =
 			"//button[.//*[local-name() = 'svg'] and .//div/span[contains(@style, 'rotate(90deg)')]]";
-      
-    this.postLoading = "//*[@aria-label='Loading...']";
 
-    this.subpostNextOnlyChevron = "//article[@role='presentation']//div[@role='presentation']/following-sibling::button";
-    this.subpostPrevNextChevron = this.subpostNextOnlyChevron + "[2]";
+		this.postLoading = "//*[@aria-label='Loading...']";
 
-    //this.commentRoot = "//article/div[3]/div[1]/ul";
-    this.commentRoot = "//article[@role='presentation']/div[1]/div[2]//ul";
+		this.subpostNextOnlyChevron =
+			"//article[@role='presentation']//div[@role='presentation']/following-sibling::button";
+		this.subpostPrevNextChevron = this.subpostNextOnlyChevron + "[2]";
 
-    //this.viewReplies = "li//button[span[contains(text(), 'View replies')]]";
-    this.viewReplies = "//li//button[span[not(count(*)) and text()!='$1']]";
-    //this.loadMore = "//button[span[@aria-label='Load more comments']]";
-    this.loadMore = "//button[span[@aria-label]]";
+		//this.commentRoot = "//article/div[3]/div[1]/ul";
+		this.commentRoot = "//article[@role='presentation']/div[1]/div[2]//ul";
 
-    this.maxCommentsTime = 10000;
+		//this.viewReplies = "li//button[span[contains(text(), 'View replies')]]";
+		this.viewReplies = "//li//button[span[not(count(*)) and text()!='$1']]";
+		//this.loadMore = "//button[span[@aria-label='Load more comments']]";
+		this.loadMore = "//button[span[@aria-label]]";
 
-    // extra window for first post, if allowed
-    this.postOnlyWindow = null;
+		this.maxCommentsTime = 10000;
 
-    this.state = {
-      posts: 0,
-      slides: 0,
-      rows: 0,
-      comments: 0,
-    };
-  }
+		// extra window for first post, if allowed
+		this.postOnlyWindow = null;
 
-  cleanup() {
-    if (this.postOnlyWindow) {
-      this.postOnlyWindow.close();
-      this.postOnlyWindow = null;
-    }
-  }
+		this.state = {
+			posts: 0,
+			slides: 0,
+			rows: 0,
+			comments: 0,
+		};
+	}
 
-  async waitForNext(child) {
-    if (!child) {
-      return null;
-    }
+	cleanup() {
+		if (this.postOnlyWindow) {
+			this.postOnlyWindow.close();
+			this.postOnlyWindow = null;
+		}
+	}
 
-    await sleep(waitUnit);
+	async waitForNext(child) {
+		if (!child) {
+			return null;
+		}
 
-    if (!child.nextElementSibling) {
-      return null;
-    }
+		await sleep(waitUnit);
 
-    //     while (xpathNode(this.progressQuery, child.nextElementSibling)) {
-    //       await sleep(100);
-    //     }
+		if (!child.nextElementSibling) {
+			return null;
+		}
 
-    return child.nextElementSibling;
-  }
+		//     while (xpathNode(this.progressQuery, child.nextElementSibling)) {
+		//       await sleep(100);
+		//     }
 
-  async* iterRow() {
-    let root = xpathNode(this.rootPath);
+		return child.nextElementSibling;
+	}
 
-    if (!root) {
-      return;
-    }
+	async *iterRow() {
+		let root = xpathNode(this.rootPath);
 
-    let child = root.firstElementChild;
+		if (!root) {
+			return;
+		}
 
-    if (!child) {
-      return;
-    }
+		let child = root.firstElementChild;
 
-    while (child) {
-      await sleep(waitUnit);
+		if (!child) {
+			return;
+		}
 
-      const restorer = new RestoreState(this.childMatchSelect, child);
+		while (child) {
+			await sleep(waitUnit);
 
-      if (restorer.matchValue) {
-        yield child;
+			const restorer = new RestoreState(this.childMatchSelect, child);
 
-        child = await restorer.restore(this.rootPath, this.childMatch);
-      }
+			if (restorer.matchValue) {
+				yield child;
 
-      child = await this.waitForNext(child);
-    }
-  }
+				child = await restorer.restore(this.rootPath, this.childMatch);
+			}
 
-  async* viewStandalonePost(origLoc) {
-    let root = xpathNode(this.rootPath);
+			child = await this.waitForNext(child);
+		}
+	}
 
-    if (!root || !root.firstElementChild) {
-      return;
-    }
+	async *viewStandalonePost(origLoc) {
+		let root = xpathNode(this.rootPath);
 
-    const firstPostHref = xpathString(this.childMatchSelect, root.firstElementChild);
+		if (!root || !root.firstElementChild) {
+			return;
+		}
 
-    yield this.getState("Loading single post view for first post: " + firstPostHref);
+		const firstPostHref = xpathString(
+			this.childMatchSelect,
+			root.firstElementChild
+		);
 
-    // const separateWindow = false;
+		yield this.getState(
+			"Loading single post view for first post: " + firstPostHref
+		);
 
-    // if (separateWindow) {
-    //   try {
-    //     this.postOnlyWindow = window.open(firstPostHref, "_blank", "resizable");
+		// const separateWindow = false;
 
-    //     installBehaviors(this.postOnlyWindow);
+		// if (separateWindow) {
+		//   try {
+		//     this.postOnlyWindow = window.open(firstPostHref, "_blank", "resizable");
 
-    //     this.postOnlyWindow.__bx_behaviors.run({autofetch: true});
+		//     installBehaviors(this.postOnlyWindow);
 
-    //     await sleep(waitUnit * 10);
-  
-    //   } catch (e) {
-    //     behavior_log(e);
-    //   }
-    // } else {
+		//     this.postOnlyWindow.__bx_behaviors.run({autofetch: true});
 
-    window.history.replaceState({}, "", firstPostHref);
-    window.dispatchEvent(new PopStateEvent("popstate", { state: {} }));
+		//     await sleep(waitUnit * 10);
 
-    let root2 = null;
-    let root3 = null;
+		//   } catch (e) {
+		//     behavior_log(e);
+		//   }
+		// } else {
 
-    await sleep(waitUnit * 5);
+		window.history.replaceState({}, "", firstPostHref);
+		window.dispatchEvent(new PopStateEvent("popstate", { state: {} }));
 
-    await waitUntil(() => (root2 = xpathNode(this.rootPath)) !== root && root2, waitUnit * 5);
+		let root2 = null;
+		let root3 = null;
 
-    await sleep(waitUnit * 5);
+		await sleep(waitUnit * 5);
 
-    window.history.replaceState({}, "", origLoc);
-    window.dispatchEvent(new PopStateEvent("popstate", { state: {} }));
+		await waitUntil(
+			() => (root2 = xpathNode(this.rootPath)) !== root && root2,
+			waitUnit * 5
+		);
 
-    await waitUntil(() => (root3 = xpathNode(this.rootPath)) !== root2 && root3, waitUnit * 5);
-    //}
-  }
+		await sleep(waitUnit * 5);
 
-  async *iterSubposts() {
-    let next = xpathNode(this.subpostNextOnlyChevron);
+		window.history.replaceState({}, "", origLoc);
+		window.dispatchEvent(new PopStateEvent("popstate", { state: {} }));
 
-    let count = 1;
+		await waitUntil(
+			() => (root3 = xpathNode(this.rootPath)) !== root2 && root3,
+			waitUnit * 5
+		);
+		//}
+	}
 
-    while (next) {
-      next.click();
-      await sleep(waitUnit * 5);
+	async *iterSubposts() {
+		let next = xpathNode(this.subpostNextOnlyChevron);
 
-      yield this.getState(`Loading Slide ${++count} for ${window.location.href}`, "slides");
+		let count = 1;
 
-      next = xpathNode(this.subpostPrevNextChevron);
-    }
+		while (next) {
+			next.click();
+			await sleep(waitUnit * 5);
 
-    await sleep(waitUnit * 5);
-  }
+			yield this.getState(
+				`Loading Slide ${++count} for ${window.location.href}`,
+				"slides"
+			);
 
-  async iterComments() {
-    const root = xpathNode(this.commentRoot);
+			next = xpathNode(this.subpostPrevNextChevron);
+		}
 
-    if (!root) {
-      return;
-    }
+		await sleep(waitUnit * 5);
+	}
 
-    let child = root.firstElementChild;
+	async iterComments() {
+		const root = xpathNode(this.commentRoot);
 
-    let commentsLoaded = false;
+		if (!root) {
+			return;
+		}
 
-    let text = "";
+		let child = root.firstElementChild;
 
-    while (child) {
-      child.scrollIntoView(this.scrollOpts);
+		let commentsLoaded = false;
 
-      commentsLoaded = true;
+		let text = "";
 
-      let viewReplies = xpathNode(this.viewReplies.replace("$1", text), child);
+		while (child) {
+			child.scrollIntoView(this.scrollOpts);
 
-      while (viewReplies) {
-        const orig = viewReplies.textContent;
-        viewReplies.click();
-        this.state.comments++;
-        await sleep(waitUnit * 2.5);
+			commentsLoaded = true;
 
-        await waitUntil(() => orig !== viewReplies.textContent, waitUnit);
+			let viewReplies = xpathNode(this.viewReplies.replace("$1", text), child);
 
-        text = viewReplies.textContent;
-        viewReplies = xpathNode(this.viewReplies.replace("$1", text), child);
-      }
+			while (viewReplies) {
+				const orig = viewReplies.textContent;
+				viewReplies.click();
+				this.state.comments++;
+				await sleep(waitUnit * 2.5);
 
-      if (child.nextElementSibling && child.nextElementSibling.tagName === "LI" && !child.nextElementSibling.nextElementSibling) {
-        let loadMore = xpathNode(this.loadMore, child.nextElementSibling);
-        if (loadMore) {
-          loadMore.click();
-          this.state.comments++;
-          await sleep(waitUnit * 5);
-        } 
-      }
+				await waitUntil(() => orig !== viewReplies.textContent, waitUnit);
 
-      child = child.nextElementSibling;
-      await sleep(waitUnit * 2.5);
-    }
+				text = viewReplies.textContent;
+				viewReplies = xpathNode(this.viewReplies.replace("$1", text), child);
+			}
 
-    return commentsLoaded;
-  }
+			if (
+				child.nextElementSibling &&
+				child.nextElementSibling.tagName === "LI" &&
+				!child.nextElementSibling.nextElementSibling
+			) {
+				let loadMore = xpathNode(this.loadMore, child.nextElementSibling);
+				if (loadMore) {
+					loadMore.click();
+					this.state.comments++;
+					await sleep(waitUnit * 5);
+				}
+			}
 
-  async* iterPosts(next) {
-    let count = 0;
-    
-    while (next && ++count <= 3) {
-      next.click();
-      await sleep(waitUnit * 10);
+			child = child.nextElementSibling;
+			await sleep(waitUnit * 2.5);
+		}
 
-      yield this.getState("Loading Post: " + window.location.href, "posts");
+		return commentsLoaded;
+	}
 
-      await fetch(window.location.href);
+	async *iterPosts(next) {
+		let count = 0;
 
-      yield* this.iterSubposts();
+		while (next && ++count <= 3) {
+			next.click();
+			await sleep(waitUnit * 10);
 
-      yield this.getState("Loaded Comments", "comments");
+			yield this.getState("Loading Post: " + window.location.href, "posts");
 
-      await Promise.race([
-        this.iterComments(),
-        sleep(this.maxCommentsTime)
-      ]);
+			await fetch(window.location.href);
 
-      next = xpathNode(this.nextPost);
+			yield* this.iterSubposts();
 
-      while (!next && xpathNode(this.postLoading)) {
-        await sleep(waitUnit * 2.5);
-      }
-    }
+			yield this.getState("Loaded Comments", "comments");
 
-    await sleep(waitUnit * 5);
-  }
+			await Promise.race([this.iterComments(), sleep(this.maxCommentsTime)]);
 
-  async* [Symbol.asyncIterator]() {
-    const origLoc = window.location.href;
+			next = xpathNode(this.nextPost);
 
-    yield* this.viewStandalonePost(origLoc);
+			while (!next && xpathNode(this.postLoading)) {
+				await sleep(waitUnit * 2.5);
+			}
+		}
 
-    for await (const row of this.iterRow()) {
-      row.scrollIntoView(this.scrollOpts);
+		await sleep(waitUnit * 5);
+	}
 
-      await sleep(waitUnit * 2.5);
+	async *[Symbol.asyncIterator]() {
+		const origLoc = window.location.href;
 
-      yield this.getState("Loading Row", "rows");
+		yield* this.viewStandalonePost(origLoc);
 
-      const first = xpathNode(this.firstPostInRow, row);
+		for await (const row of this.iterRow()) {
+			row.scrollIntoView(this.scrollOpts);
 
-      yield* this.iterPosts(first);
+			await sleep(waitUnit * 2.5);
 
-      const close = xpathNode(this.postCloseButton);
-      if (close) {
-        close.click();
-      }
+			yield this.getState("Loading Row", "rows");
 
-      await sleep(waitUnit * 5);
-    }
-  }
+			const first = xpathNode(this.firstPostInRow, row);
+
+			yield* this.iterPosts(first);
+
+			const close = xpathNode(this.postCloseButton);
+			if (close) {
+				close.click();
+			}
+
+			await sleep(waitUnit * 5);
+		}
+	}
 }
