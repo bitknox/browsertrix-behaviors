@@ -68,6 +68,7 @@ export class InstagramPostsBehavior extends Behavior {
 			slides: 0,
 			rows: 0,
 			comments: 0,
+			stories:0,
 		};
 	}
 
@@ -256,7 +257,7 @@ export class InstagramPostsBehavior extends Behavior {
 
 	async *iterStories(){
 		let storyNode = xpathNode(this.stories)
-		console.log(storyNode)
+		
 		if(!storyNode)
 			return
 
@@ -264,8 +265,15 @@ export class InstagramPostsBehavior extends Behavior {
 			yield storyNode
 			storyNode = storyNode.nextElementSibling
 		}
-		
+	}
 
+	async *iterStory(story){
+		/*TODO:
+		- click story element
+		- wait until story page loads
+		- iterate though story fully
+		- close story menu
+		*/
 	}
 
 	async *iterPosts(next) {
@@ -297,9 +305,6 @@ export class InstagramPostsBehavior extends Behavior {
 
 	async *[Symbol.asyncIterator]() {
 		const origLoc = window.location.href;
-
-		/*storyNodes.next().value.click()
-		yield this.getState("Loaded Stories", "stories");*/
 		
 		for await(const story of this.iterStories()){
 			story.scrollIntoView(this.scrollOpts)
