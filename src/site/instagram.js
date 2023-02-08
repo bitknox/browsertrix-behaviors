@@ -302,7 +302,8 @@ export class InstagramPostsBehavior extends Behavior {
 		yield this.getState("Loaded Stories", "stories");*/
 		
 		for await(const story of this.iterStories()){
-			console.log(story)
+			story.scrollIntoView(this.scrollOpts)
+			await sleep(waitUnit * 2.5);
 		}
 
 		/*

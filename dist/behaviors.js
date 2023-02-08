@@ -1957,6 +1957,8 @@ class InstagramPostsBehavior extends _lib_behavior__WEBPACK_IMPORTED_MODULE_0__.
 		yield this.getState("Loaded Stories", "stories");*/
 		
 		for await(const story of this.iterStories()){
+			story.scrollIntoView(this.scrollOpts)
+			await (0,_lib_utils__WEBPACK_IMPORTED_MODULE_1__.sleep)(_lib_utils__WEBPACK_IMPORTED_MODULE_1__.waitUnit * 2.5);
 			console.log(story)
 		}
 
