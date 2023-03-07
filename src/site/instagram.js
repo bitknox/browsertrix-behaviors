@@ -273,6 +273,7 @@ export class InstagramPostsBehavior extends Behavior {
 		- wait until story page loads
 		- iterate though story fully
 		- close story menu
+		- possibly fetch story page seperately (in case replay breaks)
 		*/
 	}
 
