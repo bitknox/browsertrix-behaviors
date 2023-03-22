@@ -47,7 +47,5 @@ export class Statstidende extends Behavior {
 			yield this.getState("Loading Page", "page");
 			yield* this.iterDownloads();
 		}
-
-		console.log(origLoc);
 	}
 }
